@@ -14,7 +14,7 @@ check_cpu(){
     cpu_usage=$(awk "BEGIN {printf \"%.0f\", 100 - $cpu_idle}")
 
     local status="OK"
-    if ["cpu_usage" -ge "$CPU_THRESHOLD"]; then
+    if [ "cpu_usage" -ge "$CPU_THRESHOLD" ]; then
         status="ALERT"
     fi
 
