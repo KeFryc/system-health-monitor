@@ -75,7 +75,7 @@ run_health_check(){
         if [[ "$disk_line" == ALERT* ]]; then
             log "ALERT" "$disk_line"
         else
-            log "INFO" "disk_line"
+            log "INFO" "$disk_line"
         fi
     done < <(check_disk)
 
