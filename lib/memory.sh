@@ -15,7 +15,7 @@ check_memory() {
     mem_usage=$(awk "BEGIN {printf \"%.0f\",($mem_used / $mem_total) * 100}")
 
     local status="OK"
-    if [ "$mem_usage" -ge "MEMORY_THRESHOLD" ]; then
+    if [ "$mem_usage" -ge "$MEMORY_THRESHOLD" ]; then
         status="ALERT"
     fi
 

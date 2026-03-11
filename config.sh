@@ -13,7 +13,7 @@ MEMORY_THRESHOLD=80
 DISK_THRESHOLD=85
 
 # --- Processes ---
-PROECESS_THRESHOLD=200
+PROCESS_THRESHOLD=200
 
 # --- Logging ---
 LOG_DIR="$(dirname "$0")/logs"

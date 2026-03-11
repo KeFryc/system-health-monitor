@@ -38,7 +38,7 @@ log() {
     local log_line="[${timestamp}] [${level}] [${message}]"
 
     # Write to the log file AND print to the terminal at the same time
-    echo "$log_line" | tee -a "LOG_FILE"
+    echo "$log_line" | tee -a "$LOG_FILE"
 
 }
 

@@ -12,7 +12,7 @@ check_processes() {
     total_processes=$((total_processes -1))
 
     local status="OK"
-    if [ "$total_processes" -ge "PROCESS_THRESHOLD" ]; then
+    if [ "$total_processes" -ge "$PROCESS_THRESHOLD" ]; then
         status="ALERT"
     fi
 
