@@ -38,7 +38,7 @@ log() {
     local log_line="[${timestamp}] [${level}] [${message}]"
 
     # Write to the log file AND print to the terminal at the same time
-    echo "log_line" | tee -a "LOG_FILE"
+    echo "$log_line" | tee -a "LOG_FILE"
 
 }
 
@@ -72,7 +72,7 @@ run_health_check(){
 
     # Disk - produces multiple lines, so a loop is necessary
     while IFS= read -r disk_line; do
-        if [[ $"disk_line" == ALERT* ]]; then
+        if [[ "$disk_line" == ALERT* ]]; then
             log "ALERT" "$disk_line"
         else
             log "INFO" "disk_line"
