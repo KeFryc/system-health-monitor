@@ -8,12 +8,13 @@ A Bash-based system monitoring tool that tracks CPU, memory, disk and process us
 - Compares each metric agains a configurable threshold
 - Logs results to a daily log file with timestamps and severity levels
 - Raises ALERT entries when any metric exceeds its threshold
+- Sends desktop notifications when ALERT is detected
 - Runs automatically on a schedule via cron
 
 ## Requirements
 - Linux (tested on Ubuntuy 22.04)
 - Bash 4.0 or higher
-- Standard GNU utilities: top, free, df, ps, awk, date
+- Standard GNU utilities: top, free, df, ps, awk, date, notify-send
 
 ## Setup
 
@@ -50,3 +51,11 @@ Log files are created in logs/, named by date: health-DD-MM-YYYY.log
 Example:
 [2026-03-13 20:40:01] [INFO] [OK | Disk [/]: 31% used (threshold: 85%)]
 [2026-03-13 20:40:01] [ALERT] [ALERT | Running Processes: 248 (threshold: 200)]
+
+## Alert Output
+Displayed on destop via notify-send
+Example:
+Notify-Send right now:
+System Health Alert
+ALERT | CPU Usage: 85% (threshold: 80%)
+

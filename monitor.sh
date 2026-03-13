@@ -36,7 +36,6 @@ log() {
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
     local log_line="[${timestamp}] [${level}] [${message}]"
-
     # Write to the log file AND print to the terminal at the same time
     echo "$log_line" | tee -a "$LOG_FILE"
 
@@ -58,6 +57,7 @@ run_health_check(){
     result=$(check_cpu)
     if [[ "$result" == ALERT* ]]; then
         log "ALERT" "$result"
+        notify-send "System Health Alert" "$result"
     else
         log "INFO" "$result"
     fi
@@ -66,6 +66,7 @@ run_health_check(){
     result=$(check_memory)
     if [[ "$result" == ALERT* ]]; then
         log "ALERT" "$result"
+        notify-send "System Health Alert" "$result"
     else
         log "INFO" "$result"
     fi
@@ -74,6 +75,7 @@ run_health_check(){
     while IFS= read -r disk_line; do
         if [[ "$disk_line" == ALERT* ]]; then
             log "ALERT" "$disk_line"
+            notify-send "System Health Alert" "$result"
         else
             log "INFO" "$disk_line"
         fi
@@ -83,6 +85,7 @@ run_health_check(){
     result=$(check_processes)
     if [[ "$result" == ALERT* ]]; then
         log "ALERT" "$result"
+        notify-send "System Health Alert" "$result"
     else
         log "INFO" "$result"
     fi
