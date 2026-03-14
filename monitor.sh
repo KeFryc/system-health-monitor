@@ -52,30 +52,38 @@ run_health_check(){
     log "INFO" "========================================="
 
     local result
+    local check_count=0
+    local alert_count=0
 
     # CPU
     result=$(check_cpu)
+    check_count=$(( check_count + 1 ))
     if [[ "$result" == ALERT* ]]; then
         log "ALERT" "$result"
         notify-send "System Health Alert" "$result"
+        alert_count=$(( alert_count + 1 ))
     else
         log "INFO" "$result"
     fi
 
     # Memory
     result=$(check_memory)
+    check_count=$(( check_count + 1 ))
     if [[ "$result" == ALERT* ]]; then
         log "ALERT" "$result"
         notify-send "System Health Alert" "$result"
+        alert_count=$(( alert_count + 1 ))
     else
         log "INFO" "$result"
     fi
 
     # Disk - produces multiple lines, so a loop is necessary
     while IFS= read -r disk_line; do
+        check_count=$(( check_count + 1 ))
         if [[ "$disk_line" == ALERT* ]]; then
             log "ALERT" "$disk_line"
             notify-send "System Health Alert" "$result"
+            alert_count=$(( alert_count + 1 ))
         else
             log "INFO" "$disk_line"
         fi
@@ -83,15 +91,20 @@ run_health_check(){
 
     # Processes
     result=$(check_processes)
+    check_count=$(( check_count + 1 ))
     if [[ "$result" == ALERT* ]]; then
         log "ALERT" "$result"
         notify-send "System Health Alert" "$result"
+        alert_count=$(( alert_count + 1 ))
     else
         log "INFO" "$result"
     fi
 
     log "INFO" "Health Check Complete"
+    log "INFO" "Summary: $check_count checks completed, $alert_count alert, $(( $check_count - $alert_count )) passed"
     log "INFO" "======================================================"
+
+
 }
 
 run_health_check
