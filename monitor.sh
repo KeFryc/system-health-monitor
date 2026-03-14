@@ -82,7 +82,7 @@ run_health_check(){
         check_count=$(( check_count + 1 ))
         if [[ "$disk_line" == ALERT* ]]; then
             log "ALERT" "$disk_line"
-            notify-send "System Health Alert" "$result"
+            notify-send "System Health Alert" "$disk_line"
             alert_count=$(( alert_count + 1 ))
         else
             log "INFO" "$disk_line"
