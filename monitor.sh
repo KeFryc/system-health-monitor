@@ -2,7 +2,7 @@
 
 # ===========================================================
 # monitor.sh - Main entry point for the sytem health monitors
-# Usage: ./monitor.sh
+# Usage: ./monitor.sh [-c cpu%] [-m memory%] [-d disk%] [-p processes]
 # ===========================================================
 
 # --- Safety Options ---
@@ -47,8 +47,18 @@ log() {
 #===================================================
 
 # Get the options
-while getopts ":c:p:d:m:" option; do
+while getopts ":c:p:d:m:h" option; do
     case $option in
+        h)  # Help
+        cat << EOF
+Usage: ./monitor.sh [-c CPU%] [-m MEMORY%] [-d DISK%] [-p PROCESSES]
+-c CPU usage treshold (0-100)
+-m Memory usage threshold (0-100)
+-d Disk usage threshold (0-100)
+-p Process count threshold
+-h Help
+EOF
+exit 0;;
         c)  # Change the CPU THRESHOLD temporarily
             if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 && "$OPTARG" -le 100 ]]; then
                 CPU_THRESHOLD="$OPTARG"
