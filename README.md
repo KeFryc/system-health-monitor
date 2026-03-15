@@ -10,11 +10,12 @@ A Bash-based system monitoring tool that tracks CPU, memory, disk and process us
 - Raises ALERT entries when any metric exceeds its threshold
 - Sends desktop notifications when ALERT is detected
 - Runs automatically on a schedule via cron
+- Runs automated log rotation for files older than 30 days
 
 ## Requirements
 - Linux (tested on Ubuntuy 22.04)
 - Bash 4.0 or higher
-- Standard GNU utilities: top, free, df, ps, awk, date, notify-send
+- Standard GNU utilities: top, free, df, ps, awk, date, notify-send, find
 
 ## Setup
 
@@ -23,15 +24,22 @@ git clone https://github.com/KeFryc/system-health-monitor.git
 cd system-health-monitor
 
 ### 2. Make scripts executable
-chmod +x monitor.sh lib/*.sh
+chmod +x monitor.sh log_rotate.sh lib/*.sh
 
 ### 3. Run manually and confirm that it runs as expected
 ./monitor.sh
 
-### 4. Schedule with cron (by default every 5 minutes)
+### 4. Schedule with cron
 realpath monitor.sh (to find absolute path of the script)
+realpath log_rotate.sh (to find absolute path of the script)
 crontab -e
-# Add: */5 * * * * /absolute/path/to/monitor.sh >> /absolute/path/to/logs/cron.log 2>&1
+
+## Add: */5 * * * * /absolute/path/to/monitor.sh >> /absolute/path/to/logs/cron.log 2>&1
+## Add: 00 12 * * * /absolute/path/to/log_rotate.sh >> /absolute/path/to/logs/cron.log 2>&1
+
+By default:
+monitor.sh runs every 5 minutes
+log_rotate.sh runs every day at 12:00
 
 ## Configuration
 
