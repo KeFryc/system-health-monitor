@@ -41,6 +41,28 @@ log() {
 
 }
 
+Help(){
+    echo "Test Help"
+}
+
+#===================================================
+# Processing input options
+#===================================================
+
+# Get the options
+while getopts ":h" option; do
+    case $option in
+        h)  # display Help
+            Help
+            exit;;
+        *)  # Invalid option
+            echo "Error: Invalid option selected"
+            exit;;
+
+    esac
+done
+shift $(( OPTIND - 1 ))
+
 # ======================================================
 # Main health check
 # ======================================================
@@ -101,10 +123,7 @@ run_health_check(){
     fi
 
     log "INFO" "Health Check Complete"
-    log "INFO" "Summary: $check_count checks completed, $alert_count alert, $(( $check_count - $alert_count )) passed"
+    log "INFO" "Summary: $check_count checks completed, $alert_count alert, $(( check_count - alert_count )) passed"
     log "INFO" "======================================================"
-
-
 }
-
 run_health_check
