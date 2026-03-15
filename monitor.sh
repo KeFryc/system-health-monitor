@@ -41,20 +41,46 @@ log() {
 
 }
 
-Help(){
-    echo "Test Help"
-}
 
 #===================================================
 # Processing input options
 #===================================================
 
 # Get the options
-while getopts ":h" option; do
+while getopts ":c:p:d:m:" option; do
     case $option in
-        h)  # display Help
-            Help
-            exit;;
+        c)  # Change the CPU THRESHOLD temporarily
+            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 && "$OPTARG" -le 100 ]]; then
+                CPU_THRESHOLD="$OPTARG"
+                echo "CPU % Threshold has been temporarily changed to $OPTARG"
+            else
+                echo "Invalid argument. Please select a number (integer) between 0 and 100."
+                exit
+            fi;;
+        d)  # Change the Disk Usage % Threshold temporarily
+            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 && "$OPTARG" -le 100 ]]; then
+                DISK_THRESHOLD="$OPTARG"
+                echo "Disk Usage % Threshold has been temporarily changed to $OPTARG"
+            else
+                echo "Invalid argument. Please select a number (integer) between 0 and 100."
+                exit
+            fi;;
+        m)  # Change the Memory Usage % Threshold temporarily
+            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 && "$OPTARG" -le 100 ]]; then
+                MEMORY_THRESHOLD="$OPTARG"
+                echo "Memory Usage % Threshold has been temporarily changed to $OPTARG"
+            else
+                echo "Invalid argument. Please select a number (integer) between 0 and 100."
+                exit
+            fi;;
+        p)  # Change the Processes Count Threshold temporarily
+            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 ]]; then
+                PROCESS_THRESHOLD="$OPTARG"
+                echo "Process threshold has been temporarily changed to $OPTARG"
+            else
+                echo "Invalid argument. Please select a number (integer) that's greater or equal 0."
+            exit
+            fi;;
         *)  # Invalid option
             echo "Error: Invalid option selected"
             exit;;
