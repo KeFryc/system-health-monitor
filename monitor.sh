@@ -81,10 +81,12 @@ while getopts ":c:p:d:m:" option; do
                 echo "Invalid argument. Please select a number (integer) that's greater or equal 0." >&2
             exit 1
             fi;;
-        *)  # Invalid option
-            echo "Error: Invalid option selected" >&2
+        \?) # Invalid option
+            echo "Error: Invalid option -$OPTARG" >&2
             exit 1;;
-
+        :)  # Missing argument
+            echo "Error: Option -$OPTARG requires an argument" >&2
+            exit 1;;
     esac
 done
 shift $(( OPTIND - 1 ))
