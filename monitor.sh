@@ -54,36 +54,36 @@ while getopts ":c:p:d:m:" option; do
                 CPU_THRESHOLD="$OPTARG"
                 echo "CPU % Threshold has been temporarily changed to $OPTARG"
             else
-                echo "Invalid argument. Please select a number (integer) between 0 and 100."
-                exit
+                echo "Invalid argument. Please select a number (integer) between 0 and 100." >&2
+                exit 1
             fi;;
         d)  # Change the Disk Usage % Threshold temporarily
             if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 && "$OPTARG" -le 100 ]]; then
                 DISK_THRESHOLD="$OPTARG"
                 echo "Disk Usage % Threshold has been temporarily changed to $OPTARG"
             else
-                echo "Invalid argument. Please select a number (integer) between 0 and 100."
-                exit
+                echo "Invalid argument. Please select a number (integer) between 0 and 100." >&2
+                exit 1
             fi;;
         m)  # Change the Memory Usage % Threshold temporarily
             if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 && "$OPTARG" -le 100 ]]; then
                 MEMORY_THRESHOLD="$OPTARG"
                 echo "Memory Usage % Threshold has been temporarily changed to $OPTARG"
             else
-                echo "Invalid argument. Please select a number (integer) between 0 and 100."
-                exit
+                echo "Invalid argument. Please select a number (integer) between 0 and 100." >&2
+                exit 1
             fi;;
         p)  # Change the Processes Count Threshold temporarily
             if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 ]]; then
                 PROCESS_THRESHOLD="$OPTARG"
                 echo "Process threshold has been temporarily changed to $OPTARG"
             else
-                echo "Invalid argument. Please select a number (integer) that's greater or equal 0."
-            exit
+                echo "Invalid argument. Please select a number (integer) that's greater or equal 0." >&2
+            exit 1
             fi;;
         *)  # Invalid option
-            echo "Error: Invalid option selected"
-            exit;;
+            echo "Error: Invalid option selected" >&2
+            exit 1;;
 
     esac
 done
