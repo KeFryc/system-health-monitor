@@ -52,7 +52,7 @@ while getopts ":c:p:d:m:h" option; do
         h)  # Help
         cat << EOF
 Usage: ./monitor.sh [-c CPU%] [-m MEMORY%] [-d DISK%] [-p PROCESSES]
--c CPU usage treshold (0-100)
+-c CPU usage threshold (0-100)
 -m Memory usage threshold (0-100)
 -d Disk usage threshold (0-100)
 -p Process count threshold
@@ -60,33 +60,33 @@ Usage: ./monitor.sh [-c CPU%] [-m MEMORY%] [-d DISK%] [-p PROCESSES]
 EOF
 exit 0;;
         c)  # Change the CPU THRESHOLD temporarily
-            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 && "$OPTARG" -le 100 ]]; then
+            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -le 100 ]]; then
                 CPU_THRESHOLD="$OPTARG"
-                echo "CPU % Threshold has been temporarily changed to $OPTARG"
+                log "INFO" "CPU threshold overridden to $OPTARG%"
             else
                 echo "Invalid argument. Please select a number (integer) between 0 and 100." >&2
                 exit 1
             fi;;
         d)  # Change the Disk Usage % Threshold temporarily
-            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 && "$OPTARG" -le 100 ]]; then
+            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -le 100 ]]; then
                 DISK_THRESHOLD="$OPTARG"
-                echo "Disk Usage % Threshold has been temporarily changed to $OPTARG"
+                log "INFO" "Disk usage threshold overridden to $OPTARG%"
             else
                 echo "Invalid argument. Please select a number (integer) between 0 and 100." >&2
                 exit 1
             fi;;
         m)  # Change the Memory Usage % Threshold temporarily
-            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 && "$OPTARG" -le 100 ]]; then
+            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -le 100 ]]; then
                 MEMORY_THRESHOLD="$OPTARG"
-                echo "Memory Usage % Threshold has been temporarily changed to $OPTARG"
+                log "INFO" "Memory usage threshold overridden to $OPTARG%"
             else
                 echo "Invalid argument. Please select a number (integer) between 0 and 100." >&2
                 exit 1
             fi;;
         p)  # Change the Processes Count Threshold temporarily
-            if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -ge 0 ]]; then
+            if [[ "$OPTARG" =~ ^[0-9]+$ ]]; then
                 PROCESS_THRESHOLD="$OPTARG"
-                echo "Process threshold has been temporarily changed to $OPTARG"
+                log "INFO" "Process count threshold overridden to $OPTARG"
             else
                 echo "Invalid argument. Please select a number (integer) that's greater or equal 0." >&2
             exit 1
