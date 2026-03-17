@@ -6,7 +6,6 @@
 # ===========================================================
 
 # --- Safety Options ---
-
 set -e          # Exit immediately if any command fails
 set -u          # Treat unset variables as errors
 set -o pipefail # A pipeline fails if any command in it fails
@@ -20,27 +19,10 @@ source "${SCRIPT_DIR}/lib/cpu.sh"
 source "${SCRIPT_DIR}/lib/disk.sh"
 source "${SCRIPT_DIR}/lib/memory.sh"
 source "${SCRIPT_DIR}/lib/processes.sh"
-
-# ============================================================
-# Logging Functionality
-# ============================================================
+source "${SCRIPT_DIR}/lib/logging.sh"
 
 # Ensure the log directory exists
 mkdir -p "$LOG_DIR"
-
-log() {
-    #Usage: log "LEVEL" "message"
-    local level="$1"
-    local message="$2"
-    local timestamp
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-
-    local log_line="[${timestamp}] [${level}] [${message}]"
-    # Write to the log file AND print to the terminal at the same time
-    echo "$log_line" | tee -a "$LOG_FILE"
-
-}
-
 
 #===================================================
 # Processing input options

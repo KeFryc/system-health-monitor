@@ -6,13 +6,13 @@
 check_memory() {
     # Verify that Memory THRESHOLD is set
     if [[ -z "$MEMORY_THRESHOLD" ]]; then
-       echo "Error: Memory Threshold is not set. Verify the configuration file" >&2
+       log "WARN" "Memory Threshold is not set. Verify the configuration file" >&2
        return 1
     fi
 
     # Verify that the Memory Threshold value is set correctly
     if ! [[ "$MEMORY_THRESHOLD" =~ ^[0-9]+$ && "$MEMORY_THRESHOLD" -le 100 ]]; then
-        echo "Error: Memory Threshold is set to incorrect value. Verify the configuration file" >&2
+        log "WARN" "Memory Threshold is set to incorrect value. Verify the configuration file" >&2
         return 1
     fi
 

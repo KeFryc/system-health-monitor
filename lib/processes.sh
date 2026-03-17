@@ -8,13 +8,13 @@ check_processes() {
 
     # Verify that Process THRESHOLD is set
     if [[ -z "$PROCESS_THRESHOLD" ]]; then
-       echo "Error: Process Threshold is not set. Verify the configuration file" >&2
+       log "WARN" "Process Threshold is not set. Verify the configuration file" >&2
        return 1
     fi
 
     # Verify that the Process Threshold value is set correctly
     if ! [[ "$PROCESS_THRESHOLD" =~ ^[0-9]+$ ]]; then
-        echo "Error: Process Threshold is set to incorrect value. Verify the configuration file" >&2
+        log "WARN" "Process Threshold is set to incorrect value. Verify the configuration file" >&2
         return 1
     fi
 

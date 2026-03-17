@@ -6,13 +6,13 @@
 check_cpu(){
     #Verify that CPU THRESHOLD is set
     if [[ -z "$CPU_THRESHOLD" ]]; then
-       echo "Error: CPU Threshold is not set. Verify the configuration file" >&2
+       log "WARN" "Error: CPU Threshold is not set. Verify the configuration file" >&2
        return 1
     fi
 
     # Verify that the CPU Threshold value is set correctly
     if ! [[ "$CPU_THRESHOLD" =~ ^[0-9]+$ && "$CPU_THRESHOLD" -le 100 ]]; then
-        echo "Error: CPU Threshold is set to incorrect value. Verify the configuration file" >&2
+        log "WARN" "CPU Threshold is set to incorrect value. Verify the configuration file" >&2
         return 1
     fi
 
