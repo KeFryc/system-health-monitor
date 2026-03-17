@@ -116,48 +116,62 @@ run_health_check(){
     local alert_count=0
 
     # CPU
-    result=$(check_cpu)
-    check_count=$(( check_count + 1 ))
-    if [[ "$result" == ALERT* ]]; then
-        log "ALERT" "$result"
-        notify-send "System Health Alert" "$result"
-        alert_count=$(( alert_count + 1 ))
+    if result=$(check_cpu); then
+        check_count=$(( check_count + 1 ))
+        if [[ "$result" == ALERT* ]]; then
+            log "ALERT" "$result"
+            notify-send "System Health Alert" "$result"
+            alert_count=$(( alert_count + 1 ))
+      else
+            log "INFO" "$result"
+        fi
     else
-        log "INFO" "$result"
+        log "WARN" "CPU check skipped"
     fi
 
     # Memory
-    result=$(check_memory)
-    check_count=$(( check_count + 1 ))
-    if [[ "$result" == ALERT* ]]; then
-        log "ALERT" "$result"
-        notify-send "System Health Alert" "$result"
-        alert_count=$(( alert_count + 1 ))
+    if result=$(check_memory); then
+        check_count=$(( check_count + 1 ))
+        if [[ "$result" == ALERT* ]]; then
+            log "ALERT" "$result"
+            notify-send "System Health Alert" "$result"
+            alert_count=$(( alert_count + 1 ))
+        else
+            log "INFO" "$result"
+        fi
     else
-        log "INFO" "$result"
+        log "WARN" "MEMORY check skipped"
     fi
 
     # Disk - produces multiple lines, so a loop is necessary
     while IFS= read -r disk_line; do
-        check_count=$(( check_count + 1 ))
-        if [[ "$disk_line" == ALERT* ]]; then
-            log "ALERT" "$disk_line"
-            notify-send "System Health Alert" "$disk_line"
-            alert_count=$(( alert_count + 1 ))
+        if result=(check_disk); then
+            check_count=$(( check_count + 1 ))
+            if [[ "$disk_line" == ALERT* ]]; then
+                log "ALERT" "$disk_line"
+                notify-send "System Health Alert" "$disk_line"
+                alert_count=$(( alert_count + 1 ))
+            else
+                log "INFO" "$disk_line"
+            fi
         else
-            log "INFO" "$disk_line"
+            log "WARN" "DISK_CHECK_SKIPPED"
         fi
     done < <(check_disk)
 
+
     # Processes
-    result=$(check_processes)
-    check_count=$(( check_count + 1 ))
-    if [[ "$result" == ALERT* ]]; then
-        log "ALERT" "$result"
-        notify-send "System Health Alert" "$result"
-        alert_count=$(( alert_count + 1 ))
+    if result=$(check_processes); then
+        check_count=$(( check_count + 1 ))
+        if [[ "$result" == ALERT* ]]; then
+            log "ALERT" "$result"
+            notify-send "System Health Alert" "$result"
+            alert_count=$(( alert_count + 1 ))
+        else
+            log "INFO" "$result"
+        fi
     else
-        log "INFO" "$result"
+        log "WARN" "PROCESSES CHECK SKIPPED"
     fi
 
     log "INFO" "Health Check Complete"
