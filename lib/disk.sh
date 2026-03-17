@@ -4,6 +4,18 @@
 # ============================================
 
 check_disk(){
+    #Verify that DISK THRESHOLD is set
+    if [[ -z "$DISK_THRESHOLD" ]]; then
+       echo "Error: DISK Threshold is not set. Verify the configuration file" >&2
+       return 1
+    fi
+
+    # Verify that the DISK Threshold value is set correctly
+    if ! [[ "$DISK_THRESHOLD" =~ ^[0-9]+$ && "$DISK_THRESHOLD" -le 100 ]]; then
+        echo "Error: DISK Threshold is set to incorrect value. Verify the configuration file" >&2
+        return 1
+    fi
+
     local found_alert=false
 
     # Read each line from df output, skipping the header row

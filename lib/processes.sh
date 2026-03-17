@@ -5,6 +5,20 @@
 # ====================================================
 
 check_processes() {
+
+    # Verify that Process THRESHOLD is set
+    if [[ -z "$PROCESS_THRESHOLD" ]]; then
+       echo "Error: Process Threshold is not set. Verify the configuration file" >&2
+       return 1
+    fi
+
+    # Verify that the Process Threshold value is set correctly
+    if ! [[ "$PROCESS_THRESHOLD" =~ ^[0-9]+$ ]]; then
+        echo "Error: Process Threshold is set to incorrect value. Verify the configuration file" >&2
+        return 1
+    fi
+
+
     # 'ps aux' lists all processes for all users
     # 'wc -l' counts lines - subtract 1 for the header row
     local total_processes
