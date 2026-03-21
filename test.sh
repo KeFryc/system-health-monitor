@@ -22,18 +22,49 @@ source "${SCRIPT_DIR}/lib/logging.sh"
 # Override log filename, to ensure separation from standard logging process
 LOG_FILE="${LOG_DIR}/test-$(date +%d-%m-%Y).log"
 
-# --- Assign the result of monitoring functions to variables ---
-CPU_TEST=$(check_cpu)
-DISK_TEST=$(check_disk)
-MEMORY_TEST=$(check_memory)
+# Declare all variables for counting event occurence
+check_count=0
+pass_count=0
+fail_count=0
+skip_count=0
+error_count=0
+
+# --- Test if the monitoring function executes correctly and if so, assign the result to variable ---
+if ! declare -f check_cpu > /dev/null; then
+    log "ERROR" "check_cpu function not found - verify if it was sourced"
+    error_count=$(( error_count + 1 ))
+    CPU_TEST=""
+else
+    CPU_TEST=$(check_cpu)
+fi
+
+if ! declare -f check_disk > /dev/null; then
+    log "ERROR" "check_disk function not found - verify if it was sourced"
+    error_count=$(( error_count + 1 ))
+    DISK_TEST=""
+else
+    DISK_TEST=$(check_disk)
+fi
+
+if ! declare -f check_memory > /dev/null; then
+    log "ERROR" "check_memory function not found - verify if it was sourced"
+    error_count=$(( error_count + 1 ))
+    MEMORY_TEST=""
+else
+    MEMORY_TEST=$(check_memory)
+fi
+
+if ! declare -f check_processes > /dev/null; then
+    log "ERROR" "check_processes function not found - verify if it was sourced"
+    error_count=$(( error_count + 1 ))
+    PROCESSES_TEST=""
+else
+    PROCESSES_TEST=$(check_processes)
+fi
 PROCESSES_TEST=$(check_processes)
 
 # Run tests applicable for all monitoring functions (value set, status output, contains threshold)
-generic_output_test(){
-    local check_count=0
-    local pass_count=0
-    local fail_count=0
-    local skip_count=0
+general_output_test(){
 
     cat << EOF
 ===========================================================
