@@ -61,7 +61,6 @@ if ! declare -f check_processes > /dev/null; then
 else
     PROCESSES_TEST=$(check_processes)
 fi
-PROCESSES_TEST=$(check_processes)
 
 # Run tests applicable for all monitoring functions (value set, status output, contains threshold)
 general_output_test(){
@@ -75,68 +74,74 @@ EOF
     for arg in "$@"; do
         local func_name="$arg"
         local func_value="${!func_name}"
-
-
-        check_count=$(( check_count + 1 ))
+        local skip_check=""
 
         # Check if the monitoring function returns a result
-
-        if ! [[ -z $func_value ]]; then
-            log "PASS" "${func_name} returned a non-empty result"
-            pass_count=$(( pass_count + 1 ))
-        elif [[ -z $func_value ]]; then
-            log "FAIL" "${func_name} returned empty result" >&2
-            fail_count=$(( fail_count + 1 ))
-            log "SKIP" "Skipping following ${func_name} runs due to the return value being empty"
-            skip_count=$(( skip_count + 2 ))
-            continue
-        else
-            log "ERROR" "Test didn't return the expected results"
-        fi
-
         check_count=$(( check_count + 1 ))
 
+        if [[ -z "$func_value" ]]; then
+            log "FAIL" "${func_name} returned an empty result"
+            fail_count=$(( fail_count + 1 ))
+            skip_check="TRUE"
+        else
+            log "PASS" "${func_name} returned a non empty result"
+            pass_count=$(( pass_count + 1 ))
+        fi
+
         # Check the status output of the monitoring function
-        if [[ "$func_value" == OK* || "$func_value" == ALERT* ]];then
+        check_count=$(( check_count + 1 ))
+
+        if [[ "$skip_check" == "TRUE" ]]; then
+            skip_count=$(( skip_count + 1 ))
+        elif [[ "$func_value" == OK* || "$func_value" == ALERT* ]]; then
             log "PASS" "${func_name} output contains correct status (OK or ALERT)"
             pass_count=$(( pass_count + 1 ))
         else
-            log "FAIL" "${func_name} doesn't contact correct status output" >&2
-            fail_count=$(( fail_count + 1 ))
+            log "FAIL" "${func_name} does not contain the correct status output"
         fi
 
+        # Check if the results of monitoring function contain "Threshold"
         check_count=$(( check_count + 1 ))
 
-        # Check if the results of monitoring function contain "Threshold"
-        if [[ "$func_value" == *threshold* ]]; then
+        if [[ "$skip_check" == "TRUE" ]]; then
+            skip_count=$(( skip_count + 1 ))
+        elif [[ "$func_value" == *threshold*  ]]; then
             log "PASS" "${func_name} output contains threshold"
             pass_count=$(( pass_count + 1 ))
         else
-            log "FAIL" "${func_name} doesn't contain threshold" >&2
-            fail_count=$(( fail_count + 1 ))
+            log "FAIL" "${func_name} does not contain threshold"
+            fail_count=$((fail_count + 1 ))
         fi
+
 
     done
 
 cat << EOF
-=======================================================
-Testing is now finished with the following results:
+===========================================================
+Basic output test run is now finished.
+===========================================================
+
+EOF
+}
+
+result_summary(){
+    cat << EOF
+===========================================================
 Checks performed = $check_count
 Checks passed = $pass_count
 Checks failed = $fail_count
 Checks skipped = $skip_count
-=======================================================
+Errors encountered = $error_count
+===========================================================
 EOF
-
-    if ! [[ "$fail_count" -gt 0 ]]; then
+    #Validating the results
+    if ! [[ "$fail_count" -gt 0 || "$error_count" -gt 0 ]]; then
         log "INFO" "All test runs have completed succesfully"
     else
-        log "WARN" "Tests failed: $fail_count, tests skipped $skip_count"
+        log "WARN" "Tests failed: $fail_count, tests skipped $skip_count, tests with errors $error_count"
         exit 1
     fi
-
 }
 
-generic_output_test "CPU_TEST" "DISK_TEST" "MEMORY_TEST" "PROCESSES_TEST"
-
-
+general_output_test "CPU_TEST" "DISK_TEST" "MEMORY_TEST" "PROCESSES_TEST"
+result_summary
