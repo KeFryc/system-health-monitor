@@ -19,17 +19,17 @@ source "${SCRIPT_DIR}/lib/memory.sh"
 source "${SCRIPT_DIR}/lib/processes.sh"
 source "${SCRIPT_DIR}/lib/logging.sh"
 
-# Override log filename, to ensure separation from standard logging process
+# Separate log file to avoid polluting the production health check log
 LOG_FILE="${LOG_DIR}/test-$(date +%d-%m-%Y).log"
 
-# Declare all variables for counting event occurrence
+# --- Event occurrence count variables ---
 check_count=0
 pass_count=0
 fail_count=0
 skip_count=0
 error_count=0
 
-# --- Test if the monitoring function executes correctly and if so, assign the result to variable ---
+# Guard each function before capturing its output - catches sourcing failures early
 if ! declare -f check_cpu > /dev/null; then
     log "ERROR" "check_cpu function not found - verify if it was sourced"
     error_count=$(( error_count + 1 ))
@@ -62,7 +62,9 @@ else
     PROCESSES_TEST=$(check_processes)
 fi
 
-# Run tests applicable for all monitoring functions (value set, status output, contains threshold)
+# =========================================================
+# General output tests - apply to all monitoring functions
+# =========================================================
 general_output_test() {
 
     cat << EOF
@@ -74,9 +76,10 @@ EOF
     for arg in "$@"; do
         local func_name="$arg"
         local func_value="${!func_name}"
-        local skip_check=""
 
         while IFS= read -r test_value; do
+
+            local skip_check=""
 
             # Check if the monitoring functions return empty value
             check_count=$(( check_count + 1 ))
@@ -90,7 +93,7 @@ EOF
                 pass_count=$(( pass_count + 1 ))
             fi
 
-            # Check if the monitoring functions output contains correct status
+            # Check if output contains a valid status prefix
             check_count=$(( check_count + 1 ))
 
             if [[ "$skip_check" == "TRUE" ]]; then
@@ -104,7 +107,7 @@ EOF
                 fail_count=$(( fail_count + 1 ))
             fi
 
-            # Check if the results of monitoring function contain "Threshold"
+            # Check if output contains the word "threshold"
             check_count=$(( check_count + 1 ))
 
             if [[ "$skip_check" == "TRUE" ]]; then
@@ -117,6 +120,7 @@ EOF
                 log "FAIL" "${func_name} does not contain threshold"
                 fail_count=$((fail_count + 1 ))
             fi
+
         done <<< "$func_value"
     done
 
@@ -129,7 +133,9 @@ EOF
 }
 
 
+# =========================================================
 # CPU specific tests
+# =========================================================
 cpu_output_test() {
 
     local skip_check=""
@@ -139,14 +145,14 @@ cpu_output_test() {
 Running CPU specific output test
 =====================================================================================================
 EOF
-    # Check if the CPU_TEST returns an empty result
+
     if [[ -z "$CPU_TEST" ]]; then
         log "ERROR" "CPU_TEST returned an empty result. All further checks will be skipped"
         error_count=$(( error_count + 1 ))
         skip_check="TRUE"
     fi
 
-    # Check if CPU_TEST output contains "CPU Usage"
+    # Verify output contains "CPU Usage:" followed by a number
     check_count=$(( check_count + 1 ))
 
     if [[ "$skip_check" == "TRUE" ]]; then
@@ -160,7 +166,7 @@ EOF
         fail_count=$(( fail_count + 1 ))
     fi
 
-    # Check if CPU_TEST output contains "%" sign
+    # Verify output contains a percentage sign
     check_count=$(( check_count + 1 ))
 
     if [[ "$skip_check" == "TRUE" ]]; then
@@ -205,6 +211,9 @@ Finished CPU specific output test
 EOF
 }
 
+# =========================================================
+# DISK specific tests
+# =========================================================
 disk_output_test() {
 
     cat << EOF
@@ -213,14 +222,13 @@ Running DISK specific output test
 =====================================================================================================
 EOF
 
-     # Check if DISK_TEST returned an empty value. If so don't run any tests
      if [[ -z "$DISK_TEST" ]]; then
         log "ERROR" "DISK_TEST returned empty"
         error_count=$(( error_count + 1 ))
     else
         while IFS= read -r disk_line; do
 
-            # Check if DISK_TEST output contains Disk name with correct formatting
+            # Verify each partition line contains correct "Disk [name]: formatting"
             check_count=$(( check_count + 1 ))
 
             if [[ "$disk_line" =~ "Disk "\[.+\] ]]; then
@@ -231,7 +239,7 @@ EOF
                 fail_count=$(( fail_count + 1 ))
             fi
 
-            # Check if DISK_TEST contains "%" sign
+            # Verify each partition line contains a percentage sign
             check_count=$(( check_count + 1 ))
 
             if [[ "$disk_line" == *%* ]]; then
@@ -242,13 +250,14 @@ EOF
                 fail_count=$(( fail_count + 1 ))
             fi
 
-            # Force threshold to 0 to verify ALERT triggers correctly regardless of actual CPU usage
+        done <<< "$DISK_TEST"
+
+        # Force threshold to 0 to verify ALERT triggers correctly regardless of actual DISK usage
             local original_threshold="$DISK_THRESHOLD"
             DISK_THRESHOLD=0
             local override_value
             override_value=$(check_disk)
 
-            # Check if the status is correctly set to "ALERT" when function runs with threshold at 0
             check_count=$(( check_count + 1 ))
 
             if [[ "$override_value" == *ALERT* ]]; then
@@ -261,8 +270,6 @@ EOF
 
             # Restore before next test runs
             DISK_THRESHOLD="$original_threshold"
-
-        done <<< "$DISK_TEST"
     fi
 
     cat << EOF
@@ -273,6 +280,9 @@ Finished DISK specific output test
 EOF
 }
 
+# ============================================================
+# Memory specific tests
+# ============================================================
 memory_output_test() {
 
     local skip_check=""
@@ -282,14 +292,14 @@ memory_output_test() {
 Running MEMORY specific output test
 =====================================================================================================
 EOF
-    # Check if MEMORY_TEST returned an empty value
+
     if [[ -z "$MEMORY_TEST" ]]; then
         log "ERROR" "MEMORY_TEST returned an empty result. All further checks will be skipped"
         error_count=$(( error_count + 1 ))
         skip_check="TRUE"
     fi
 
-    # Check if MEMORY_TEST output contains "Memory" phrase
+    # Verify output contains "Memory" phrase
     check_count=$(( check_count + 1 ))
 
     if [[ "$skip_check" == "TRUE" ]]; then
@@ -303,7 +313,7 @@ EOF
         fail_count=$(( fail_count + 1 ))
     fi
 
-    # Check if MEMORY_TEST output contains "%" sign
+    # Verify output contains a percentage sign
     check_count=$(( check_count + 1 ))
 
     if [[ "$skip_check" == "TRUE" ]]; then
@@ -317,7 +327,7 @@ EOF
         fail_count=$(( fail_count + 1 ))
     fi
 
-    # Check if MEMORY_TEST contains size denominator "MB"
+    # Verify output contains the "MB" size denominator
     check_count=$(( check_count + 1 ))
 
     if [[ "$skip_check" == "TRUE" ]]; then
@@ -331,13 +341,12 @@ EOF
         fail_count=$(( fail_count + 1 ))
     fi
 
-    # Force threshold to 0 to verify ALERT triggers correctly regardless of actual CPU usage
+    # Force threshold to 0 to verify ALERT triggers correctly regardless of actual MEMORY usage
     local original_threshold="$MEMORY_THRESHOLD"
     MEMORY_THRESHOLD=0
     local override_value
     override_value=$(check_memory)
 
-    # Check if the status is correctly set to "ALERT" when function runs with threshold at 0
     check_count=$(( check_count + 1 ))
 
     if [[ "$skip_check" == "TRUE" ]]; then
@@ -362,6 +371,9 @@ Finished MEMORY specific output test
 EOF
 }
 
+# ============================================================
+# Processes specific tests
+# ============================================================
 processes_output_test() {
 
     local skip_check=""
@@ -372,14 +384,13 @@ Running PROCESSES specific output test
 =====================================================================================================
 EOF
 
-    # Check if PROCESSES_TEST returned an empty value
     if [[ -z "$PROCESSES_TEST" ]]; then
         log "ERROR" "PROCESSES_TEST returned an empty result. All further checks will be skipped"
         error_count=$(( error_count + 1 ))
         skip_check="TRUE"
     fi
 
-    # Check if PROCESSES_TEST contains "Running Processes" phrase
+    # Verify output contains "Running Processes" phrase
     check_count=$(( check_count + 1 ))
 
     if [[ "$skip_check" == "TRUE" ]]; then
@@ -393,7 +404,7 @@ EOF
         fail_count=$(( fail_count + 1 ))
     fi
 
-    # Check that PROCESSES_TEST does not contain "%" sign
+    # Verfy output does NOT contain a percentage sign - processes is a count not a percentage
     check_count=$(( check_count + 1 ))
 
     if [[ "$skip_check" == "TRUE" ]]; then
@@ -407,13 +418,12 @@ EOF
         fail_count=$(( fail_count + 1 ))
     fi
 
-    # Force threshold to 0 to verify ALERT triggers correctly regardless of actual CPU usage
+    # Force threshold to 0 to verify ALERT triggers correctly regardless of actual PROCESS count
     local original_threshold="$PROCESS_THRESHOLD"
     PROCESS_THRESHOLD=0
     local override_value
     override_value=$(check_processes)
 
-    # Check if the status is correctly set to "ALERT" when function runs with threshold at 0
     check_count=$(( check_count + 1 ))
 
     if [[ "$skip_check" == "TRUE" ]]; then
@@ -438,9 +448,11 @@ Finished PROCESSES specific output test
 EOF
 }
 
+# ============================================================
+# Result summary
+# ============================================================
 result_summary() {
 
-    # Display summary of all tests
     cat << EOF
 =====================================================================================================
 Test Summary
@@ -451,11 +463,10 @@ Checks failed = $fail_count
 Checks skipped = $skip_count
 Errors encountered = $error_count
 =====================================================================================================
-Final Result
-=====================================================================================================
+Final Result:
 EOF
 
-    #Validating the results
+# Validate the test results, to ensure the correct return status for the script
     if ! [[ "$fail_count" -gt 0 || "$error_count" -gt 0 ]]; then
         log "INFO" "All test runs have completed successfully"
     else
@@ -466,7 +477,6 @@ EOF
     cat << EOF
 =====================================================================================================
 EOF
-
 }
 
 general_output_test "CPU_TEST" "DISK_TEST" "MEMORY_TEST" "PROCESSES_TEST"
