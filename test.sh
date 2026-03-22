@@ -63,12 +63,12 @@ else
 fi
 
 # Run tests applicable for all monitoring functions (value set, status output, contains threshold)
-general_output_test(){
+general_output_test() {
 
     cat << EOF
-===========================================================
+=====================================================================================================
 Running basic output tests for all monitoring functions..
-===========================================================
+=====================================================================================================
 EOF
 
     for arg in "$@"; do
@@ -76,7 +76,7 @@ EOF
         local func_value="${!func_name}"
         local skip_check=""
 
-        # Check if the monitoring function returns a result
+        # Check if the monitoring function value is empty
         check_count=$(( check_count + 1 ))
 
         if [[ -z "$func_value" ]]; then
@@ -88,22 +88,25 @@ EOF
             pass_count=$(( pass_count + 1 ))
         fi
 
-        # Check the status output of the monitoring function
+        # Check if the monitoring functions output contains correct status
         check_count=$(( check_count + 1 ))
 
         if [[ "$skip_check" == "TRUE" ]]; then
+            log "SKIP" "Status Output Test skipped due to previously listed FAILURE"
             skip_count=$(( skip_count + 1 ))
         elif [[ "$func_value" == OK* || "$func_value" == ALERT* ]]; then
             log "PASS" "${func_name} output contains correct status (OK or ALERT)"
             pass_count=$(( pass_count + 1 ))
         else
             log "FAIL" "${func_name} does not contain the correct status output"
+            fail_count=$(( fail_count + 1 ))
         fi
 
         # Check if the results of monitoring function contain "Threshold"
         check_count=$(( check_count + 1 ))
 
         if [[ "$skip_check" == "TRUE" ]]; then
+            log "SKIP" "Threshold Check Test skipped due to previously listed FAILURE"
             skip_count=$(( skip_count + 1 ))
         elif [[ "$func_value" == *threshold*  ]]; then
             log "PASS" "${func_name} output contains threshold"
@@ -117,23 +120,261 @@ EOF
     done
 
 cat << EOF
-===========================================================
-Basic output test run is now finished.
-===========================================================
+=====================================================================================================
+Basic output test run is now finished
+=====================================================================================================
 
 EOF
 }
 
-result_summary(){
+
+# CPU specific tests
+cpu_output_test() {
+
+    local skip_check=""
+
     cat << EOF
-===========================================================
+=====================================================================================================
+Running CPU specific output test
+=====================================================================================================
+EOF
+    # Check if the CPU_TEST returns an empty result
+    if [[ -z "$CPU_TEST" ]]; then
+        log "ERROR" "CPU_TEST returned an empty result. All further checks will be skipped"
+        error_count=$(( error_count + 1 ))
+        skip_check="TRUE"
+    fi
+
+    # Check if CPU_TEST output contains "CPU Usage"
+    check_count=$(( check_count + 1 ))
+
+    if [[ $skip_check == "TRUE" ]]; then
+        log "SKIP" "Check skipped due to the empty value of CPU_TEST"
+        skip_count=$(( skip_count + 1 ))
+    elif [[ "$CPU_TEST" =~ "CPU Usage: "[0-9]+ ]]; then
+        log "PASS" "CPU_TEST contains CPU Usage"
+        pass_count=$(( pass_count + 1 ))
+    else
+        log "FAIL" "CPU_TEST does not contain CPU Usage"
+        fail_count=$(( fail_count + 1 ))
+    fi
+
+    # Check if CPU_TEST output contains "%" sign
+    check_count=$(( check_count + 1 ))
+
+    if [[ $skip_check == "TRUE" ]]; then
+        log "SKIP" "Check skipped due to the empty value of CPU_TEST"
+        skip_count=$(( skip_count + 1 ))
+    elif [[ $CPU_TEST == *%* ]]; then
+        log "PASS" "CPU_TEST contains '%' sign"
+        pass_count=$(( pass_count + 1 ))
+    else
+        log "FAIL" "CPU_TEST does not contain '%' sign"
+        fail_count=$(( fail_count + 1))
+    fi
+
+    cat << EOF
+=====================================================================================================
+Finished CPU specific output test
+=====================================================================================================
+
+EOF
+}
+
+disk_output_test() {
+
+    local skip_check=""
+
+    cat << EOF
+=====================================================================================================
+Running DISK specific output test
+=====================================================================================================
+EOF
+
+    # Check if DISK_TEST returned an empty value
+    if [[ -z "$DISK_TEST" ]]; then
+        log "ERROR" "DISK_TEST returned empty"
+        skip_check="TRUE"
+        error_count=$(( error_count + 1 ))
+    fi
+
+    # Run while loop on the results of DISK_TEST (per line sourced by here-string)
+    while IFS= read -r disk_line; do
+
+        # Check if DISK_TEST output contains Disk name with correct formatting
+        check_count=$(( check_count + 1 ))
+
+        if [[ "$skip_check" == "TRUE" ]]; then
+            log "SKIP" "Contains 'Disk [name]:' test skipped due to previously listed error"
+            skip_count=$(( skip_count + 1 ))
+        elif [[ "$disk_line" =~ "Disk "\[.+\] ]]; then
+            log "PASS" "DISK_TEST contains the correct 'Disk [name]:' formatting"
+            pass_count=$(( pass_count + 1 ))
+        else
+            log "FAIL" "DISK_TEST does not contain correct 'Disk [name]:' formatting"
+            fail_count=$(( fail_count + 1 ))
+        fi
+
+        # Check if DISK_TEST contains "%" sign
+        check_count=$(( check_count + 1 ))
+
+        if [[ "$skip_check" == "TRUE" ]]; then
+            log "SKIP" "Contains '%' test skipped due to previously listed error"
+            skip_count=$(( skip_count + 1 ))
+        elif [[ "$disk_line" == *%* ]]; then
+            log "PASS" "DISK_TEST contains '%' sign"
+            pass_count=$(( pass_count + 1 ))
+        else
+            log "FAIL" "DISK_TEST does not contain '%' sign"
+            fail_count=$(( fail_count + 1 ))
+        fi
+    done <<< "$DISK_TEST"
+
+    cat << EOF
+=====================================================================================================
+Finished DISK specific output test
+=====================================================================================================
+
+EOF
+}
+
+memory_output_test() {
+
+    local skip_check=""
+
+    cat << EOF
+=====================================================================================================
+Running MEMORY specific output test
+=====================================================================================================
+EOF
+    # Check if MEMORY_TEST returned an empty value
+    if [[ -z "$MEMORY_TEST" ]]; then
+        log "ERROR" "MEMORY_TEST returned an empty result. All further checks will be skipped"
+        error_count=$(( error_count + 1 ))
+        skip_check="TRUE"
+    fi
+
+    # Check if MEMORY_TEST output contains "Memory" phrase
+    check_count=$(( check_count + 1 ))
+
+    if [[ "$skip_check" == "TRUE" ]]; then
+        log "SKIP" "Contains 'Memory' test skipped due to previously listed error"
+        skip_count=$(( skip_count + 1 ))
+    elif [[ "$MEMORY_TEST" == *Memory* ]]; then
+        log "PASS" "MEMORY_TEST output contains 'Memory' phrase"
+        pass_count=$(( pass_count + 1 ))
+    else
+        log "FAIL" "MEMORY_TEST output does not contain 'Memory' phrase"
+        fail_count=$(( fail_count + 1 ))
+    fi
+
+    # Check if MEMORY_TEST output contains "%" sign
+    check_count=$(( check_count + 1 ))
+
+    if [[ "$skip_check" == "TRUE" ]]; then
+        log "SKIP" "Contains '%' test skipped due to previously listed error"
+        skip_count=$(( skip_count + 1 ))
+    elif [[ "$MEMORY_TEST" == *%* ]]; then
+        log "PASS" "MEMORY_TEST output contains '%' sign"
+        pass_count=$(( pass_count + 1 ))
+    else
+        log "FAIL" "MEMORY_TEST output does not contain '%' sign"
+        fail_count=$(( fail_count + 1 ))
+    fi
+
+    # Check if MEMORY_TEST contains size denominator "MB"
+    check_count=$(( check_count + 1 ))
+
+    if [[ $skip_check == "TRUE" ]]; then
+        log "SKIP" "Contains 'MB' test skipped due to previously listed error"
+        skip_count=$(( skip_count + 1 ))
+    elif [[ "$MEMORY_TEST" == *MB* ]]; then
+        log "PASS" "MEMORY_TEST output contains correct size denominator 'MB'"
+        pass_count=$(( pass_count + 1 ))
+    else
+        log "FAIL" "MEMORY_TEST output does not contain correct size denominator 'MB'"
+        fail_count=$(( fail_count + 1 ))
+    fi
+
+    cat << EOF
+=====================================================================================================
+Finished MEMORY specific output test
+=====================================================================================================
+
+EOF
+}
+
+processes_output_test() {
+
+    local skip_check=""
+
+    cat << EOF
+=====================================================================================================
+Running PROCESSES specific output test
+=====================================================================================================
+EOF
+
+    # Check if PROCESSES_TEST returned an empty value
+    if [[ -z "$PROCESSES_TEST" ]]; then
+        log "ERROR" "PROCESSES_TEST returned an empty result. All further checks will be skipped"
+        error_count=$(( error_count + 1 ))
+        skip_check="TRUE"
+    fi
+
+    # Check if PROCESSES_TEST contains "Running Processes" phrase
+    check_count=$(( check_count + 1 ))
+
+    if [[ $skip_check == "TRUE" ]]; then
+        log "SKIP" "Contains 'Running Processes' test skipped due to previously listed error"
+        skip_count=$(( skip_count + 1 ))
+    elif [[ "$PROCESSES_TEST" == *"Running Processes"* ]]; then
+        log "PASS" "PROCESSES_TEST output contains 'Running Processes' phrase"
+        pass_count=$(( pass_count + 1 ))
+    else
+        log "FAIL" "PROCESSES_TEST output does not contain 'Running Processes' phrase"
+        fail_count=$(( fail_count + 1 ))
+    fi
+
+    # Check that PROCESSES_TEST does not contain "%" sign
+    check_count=$(( check_count + 1 ))
+
+    if [[ $skip_check == "TRUE" ]]; then
+        log "SKIP" "Does not containg '%' test skipped due to previously listed error"
+        skip_count=$(( skip_count + 1 ))
+    elif ! [[ "$PROCESSES_TEST" == *%* ]]; then
+        log "PASS" "PROCESSES_TEST output does not contains '%' sign"
+        pass_count=$(( pass_count + 1 ))
+    else
+        log "FAIL" "PROCESSES_TEST output contains '%' sign"
+        fail_count=$(( fail_count + 1 ))
+    fi
+
+
+    cat << EOF
+=====================================================================================================
+Finished PROCESSES specific output test
+=====================================================================================================
+
+EOF
+}
+
+result_summary() {
+
+    # Display summary of all tests
+    cat << EOF
+=====================================================================================================
+Test Summary
+=====================================================================================================
 Checks performed = $check_count
 Checks passed = $pass_count
 Checks failed = $fail_count
 Checks skipped = $skip_count
 Errors encountered = $error_count
-===========================================================
+=====================================================================================================
+Final Result
+=====================================================================================================
 EOF
+
     #Validating the results
     if ! [[ "$fail_count" -gt 0 || "$error_count" -gt 0 ]]; then
         log "INFO" "All test runs have completed succesfully"
@@ -141,7 +382,16 @@ EOF
         log "WARN" "Tests failed: $fail_count, tests skipped $skip_count, tests with errors $error_count"
         exit 1
     fi
+
+    cat << EOF
+=====================================================================================================
+EOF
+
 }
 
 general_output_test "CPU_TEST" "DISK_TEST" "MEMORY_TEST" "PROCESSES_TEST"
+cpu_output_test
+disk_output_test
+memory_output_test
+processes_output_test
 result_summary
