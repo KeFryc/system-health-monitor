@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ===========================================================
-# monitor.sh - Main entry point for the sytem health monitors
+# monitor.sh - Main entry point for the system health monitors
 # Usage: ./monitor.sh [-c cpu%] [-m memory%] [-d disk%] [-p processes]
 # ===========================================================
 
@@ -27,11 +27,9 @@ mkdir -p "$LOG_DIR"
 #===================================================
 # Processing input options
 #===================================================
-
-# Get the options
 while getopts ":c:p:d:m:h" option; do
     case $option in
-        h)  # Help
+        h)
         cat << EOF
 Usage: ./monitor.sh [-c CPU%] [-m MEMORY%] [-d DISK%] [-p PROCESSES]
 -c CPU usage threshold (0-100)
@@ -41,7 +39,7 @@ Usage: ./monitor.sh [-c CPU%] [-m MEMORY%] [-d DISK%] [-p PROCESSES]
 -h Help
 EOF
 exit 0;;
-        c)  # Change the CPU THRESHOLD temporarily
+        c)
             if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -le 100 ]]; then
                 CPU_THRESHOLD="$OPTARG"
                 log "INFO" "CPU threshold overridden to $OPTARG%"
@@ -49,7 +47,7 @@ exit 0;;
                 echo "Invalid argument. Please select a number (integer) between 0 and 100." >&2
                 exit 1
             fi;;
-        d)  # Change the Disk Usage % Threshold temporarily
+        d)
             if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -le 100 ]]; then
                 DISK_THRESHOLD="$OPTARG"
                 log "INFO" "Disk usage threshold overridden to $OPTARG%"
@@ -57,7 +55,7 @@ exit 0;;
                 echo "Invalid argument. Please select a number (integer) between 0 and 100." >&2
                 exit 1
             fi;;
-        m)  # Change the Memory Usage % Threshold temporarily
+        m)
             if [[ "$OPTARG" =~ ^[0-9]+$ && "$OPTARG" -le 100 ]]; then
                 MEMORY_THRESHOLD="$OPTARG"
                 log "INFO" "Memory usage threshold overridden to $OPTARG%"
@@ -65,7 +63,7 @@ exit 0;;
                 echo "Invalid argument. Please select a number (integer) between 0 and 100." >&2
                 exit 1
             fi;;
-        p)  # Change the Processes Count Threshold temporarily
+        p)
             if [[ "$OPTARG" =~ ^[0-9]+$ ]]; then
                 PROCESS_THRESHOLD="$OPTARG"
                 log "INFO" "Process count threshold overridden to $OPTARG"
@@ -73,10 +71,10 @@ exit 0;;
                 echo "Invalid argument. Please select a number (integer) that's greater or equal 0." >&2
             exit 1
             fi;;
-        \?) # Invalid option
+        \?)
             echo "Error: Invalid option -$OPTARG" >&2
             exit 1;;
-        :)  # Missing argument
+        :)
             echo "Error: Option -$OPTARG requires an argument" >&2
             exit 1;;
     esac
@@ -86,32 +84,31 @@ shift $(( OPTIND - 1 ))
 # ======================================================
 # Main health check
 # ======================================================
-
 run_health_check(){
-    log "INFO" "========================================="
+    log "INFO" ======================================================
     log "INFO" "System Health Check Started"
     log "INFO" "Hostname: $(hostname)"
-    log "INFO" "========================================="
+    log "INFO" "======================================================"
 
     local result
     local check_count=0
     local alert_count=0
 
-    # CPU
+    # --- CPU Checks ---
     if result=$(check_cpu); then
         check_count=$(( check_count + 1 ))
         if [[ "$result" == ALERT* ]]; then
             log "ALERT" "$result"
             notify-send "System Health Alert" "$result"
             alert_count=$(( alert_count + 1 ))
-      else
+        else
             log "INFO" "$result"
         fi
     else
         log "WARN" "CPU check skipped"
     fi
 
-    # Memory
+    # --- Memory Checks ---
     if result=$(check_memory); then
         check_count=$(( check_count + 1 ))
         if [[ "$result" == ALERT* ]]; then
@@ -125,9 +122,11 @@ run_health_check(){
         log "WARN" "MEMORY check skipped"
     fi
 
-    # Disk - produces multiple lines, so a loop is necessary
+    # --- Disk Checks ---
+    # Disk is handled via a loop because check_disk returns one line per partition
+
     while IFS= read -r disk_line; do
-        if result=(check_disk); then
+        if [[ -n "$disk_line" ]]; then
             check_count=$(( check_count + 1 ))
             if [[ "$disk_line" == ALERT* ]]; then
                 log "ALERT" "$disk_line"
@@ -139,10 +138,9 @@ run_health_check(){
         else
             log "WARN" "DISK_CHECK_SKIPPED"
         fi
-    done < <(check_disk)
+    done < <(check_disk || true)
 
-
-    # Processes
+    # --- Processes Checks ---
     if result=$(check_processes); then
         check_count=$(( check_count + 1 ))
         if [[ "$result" == ALERT* ]]; then
@@ -153,11 +151,12 @@ run_health_check(){
             log "INFO" "$result"
         fi
     else
-        log "WARN" "PROCESSES CHECK SKIPPED"
+        log "WARN" "Processes check skipped"
     fi
-
+    log "INFO" "======================================================"
     log "INFO" "Health Check Complete"
-    log "INFO" "Summary: $check_count checks completed, $alert_count alert, $(( check_count - alert_count )) passed"
+    log "INFO" "Summary: $check_count checks completed, $alert_count alerts, $(( check_count - alert_count )) passed"
     log "INFO" "======================================================"
 }
+
 run_health_check

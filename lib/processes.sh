@@ -8,16 +8,15 @@ check_processes() {
 
     # Verify that Process THRESHOLD is set
     if [[ -z "$PROCESS_THRESHOLD" ]]; then
-       log "WARN" "Process Threshold is not set. Verify the configuration file" >&2
+       log "WARN" "Process Threshold is not set. Verify the configuration file"
        return 1
     fi
 
-    # Verify that the Process Threshold value is set correctly
+    # Verify that the Process Threshold value is set correctly — no upper limit as process count is unbounded
     if ! [[ "$PROCESS_THRESHOLD" =~ ^[0-9]+$ ]]; then
-        log "WARN" "Process Threshold is set to incorrect value. Verify the configuration file" >&2
+        log "WARN" "Process Threshold is set to incorrect value. Verify the configuration file"
         return 1
     fi
-
 
     # 'ps aux' lists all processes for all users
     # 'wc -l' counts lines - subtract 1 for the header row

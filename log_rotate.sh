@@ -17,7 +17,9 @@ source "${SCRIPT_DIR}/config.sh"
 source "${SCRIPT_DIR}/lib/logging.sh"
 
 
-# --- Log removal function ---
+# ===================================================
+# Log removal function
+# ===================================================
 remove_log(){
 
     cat << EOF
@@ -26,7 +28,6 @@ Starting Log Removal
 ====================================
 EOF
 
-    # Write file name that is removed to stdout and remove the file
     while IFS= read -r file; do
         log "INFO" "Removing: $file"
         rm "$file"
@@ -40,5 +41,4 @@ Log Removal Finished
 EOF
 }
 
-# Execute "remove_log" function
 remove_log

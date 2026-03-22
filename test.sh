@@ -19,6 +19,9 @@ source "${SCRIPT_DIR}/lib/memory.sh"
 source "${SCRIPT_DIR}/lib/processes.sh"
 source "${SCRIPT_DIR}/lib/logging.sh"
 
+# Ensure that log directory exists
+mkdir -p "$LOG_DIR"
+
 # Separate log file to avoid polluting the production health check log
 LOG_FILE="${LOG_DIR}/test-$(date +%d-%m-%Y).log"
 
@@ -192,7 +195,7 @@ EOF
     if [[ "$skip_check" == "TRUE" ]]; then
         log "SKIP" "Check skipped due to the empty value of CPU_TEST"
         skip_count=$(( skip_count + 1 ))
-    elif [[ "$override_value" == *ALERT* ]]; then
+    elif [[ "$override_value" == ALERT* ]]; then
         log "PASS" "Threshold override test passed. Alert displayed when set to 0."
         pass_count=$(( pass_count + 1 ))
     else
@@ -222,7 +225,7 @@ Running DISK specific output test
 =====================================================================================================
 EOF
 
-     if [[ -z "$DISK_TEST" ]]; then
+    if [[ -z "$DISK_TEST" ]]; then
         log "ERROR" "DISK_TEST returned empty"
         error_count=$(( error_count + 1 ))
     else
@@ -253,20 +256,20 @@ EOF
         done <<< "$DISK_TEST"
 
         # Force threshold to 0 to verify ALERT triggers correctly regardless of actual DISK usage
-            local original_threshold="$DISK_THRESHOLD"
-            DISK_THRESHOLD=0
-            local override_value
-            override_value=$(check_disk)
+        local original_threshold="$DISK_THRESHOLD"
+        DISK_THRESHOLD=0
+        local override_value
+        override_value=$(check_disk)
 
-            check_count=$(( check_count + 1 ))
+        check_count=$(( check_count + 1 ))
 
-            if [[ "$override_value" == *ALERT* ]]; then
-                log "PASS" "Threshold override test passed. Alert displayed when set to 0."
-                pass_count=$(( pass_count + 1 ))
-            else
-                log "FAIL" "Threshold override test failed, due to unexpected return value"
-                fail_count=$(( fail_count + 1 ))
-            fi
+        if [[ "$override_value" == ALERT* ]]; then
+            log "PASS" "Threshold override test passed. Alert displayed when set to 0."
+            pass_count=$(( pass_count + 1 ))
+        else
+            log "FAIL" "Threshold override test failed, due to unexpected return value"
+            fail_count=$(( fail_count + 1 ))
+        fi
 
             # Restore before next test runs
             DISK_THRESHOLD="$original_threshold"
@@ -352,7 +355,7 @@ EOF
     if [[ "$skip_check" == "TRUE" ]]; then
         log "SKIP" "Check skipped due to the empty value of MEMORY_TEST"
         skip_count=$(( skip_count + 1 ))
-    elif [[ "$override_value" == *ALERT* ]]; then
+    elif [[ "$override_value" == ALERT* ]]; then
         log "PASS" "Threshold override test passed. Alert displayed when set to 0."
         pass_count=$(( pass_count + 1 ))
     else
@@ -404,7 +407,7 @@ EOF
         fail_count=$(( fail_count + 1 ))
     fi
 
-    # Verfy output does NOT contain a percentage sign - processes is a count not a percentage
+    # Verify output does NOT contain a percentage sign - processes is a count not a percentage
     check_count=$(( check_count + 1 ))
 
     if [[ "$skip_check" == "TRUE" ]]; then
@@ -429,7 +432,7 @@ EOF
     if [[ "$skip_check" == "TRUE" ]]; then
         log "SKIP" "Check skipped due to the empty value of PROCESSES_TEST"
         skip_count=$(( skip_count + 1 ))
-    elif [[ "$override_value" == *ALERT* ]]; then
+    elif [[ "$override_value" == ALERT* ]]; then
         log "PASS" "Threshold override test passed. Alert displayed when set to 0."
         pass_count=$(( pass_count + 1 ))
     else

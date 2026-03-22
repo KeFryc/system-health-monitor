@@ -13,8 +13,8 @@ MEMORY_THRESHOLD=80
 DISK_THRESHOLD=85
 
 # --- Processes ---
-PROCESS_THRESHOLD=200
+PROCESS_THRESHOLD=250
 
 # --- Logging ---
-LOG_DIR="$(dirname "$0")/logs"
+LOG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/logs"
 LOG_FILE="${LOG_DIR}/health-$(date +%d-%m-%Y).log"

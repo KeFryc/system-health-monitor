@@ -4,6 +4,7 @@
 # ============================================
 
 check_disk(){
+
     #Verify that DISK THRESHOLD is set
     if [[ -z "$DISK_THRESHOLD" ]]; then
        log "WARN" "DISK Threshold is not set. Verify the configuration file" >&2
@@ -19,7 +20,7 @@ check_disk(){
     local found_alert=false
 
     # Read each line from df output, skipping the header row
-    while IFS=  read -r line; do
+    while IFS= read -r line; do
 
         local usage
         local mount
