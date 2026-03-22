@@ -22,7 +22,7 @@ source "${SCRIPT_DIR}/lib/logging.sh"
 # Override log filename, to ensure separation from standard logging process
 LOG_FILE="${LOG_DIR}/test-$(date +%d-%m-%Y).log"
 
-# Declare all variables for counting event occurence
+# Declare all variables for counting event occurrence
 check_count=0
 pass_count=0
 fail_count=0
@@ -76,47 +76,48 @@ EOF
         local func_value="${!func_name}"
         local skip_check=""
 
-        # Check if the monitoring function value is empty
-        check_count=$(( check_count + 1 ))
+        while IFS= read -r test_value; do
 
-        if [[ -z "$func_value" ]]; then
-            log "FAIL" "${func_name} returned an empty result"
-            fail_count=$(( fail_count + 1 ))
-            skip_check="TRUE"
-        else
-            log "PASS" "${func_name} returned a non empty result"
-            pass_count=$(( pass_count + 1 ))
-        fi
+            # Check if the monitoring functions return empty value
+            check_count=$(( check_count + 1 ))
 
-        # Check if the monitoring functions output contains correct status
-        check_count=$(( check_count + 1 ))
+            if [[ -z "$test_value" ]]; then
+                log "FAIL" "${func_name} returned an empty result"
+                fail_count=$(( fail_count + 1 ))
+                skip_check="TRUE"
+            else
+                log "PASS" "${func_name} returned a non empty result"
+                pass_count=$(( pass_count + 1 ))
+            fi
 
-        if [[ "$skip_check" == "TRUE" ]]; then
-            log "SKIP" "Status Output Test skipped due to previously listed FAILURE"
-            skip_count=$(( skip_count + 1 ))
-        elif [[ "$func_value" == OK* || "$func_value" == ALERT* ]]; then
-            log "PASS" "${func_name} output contains correct status (OK or ALERT)"
-            pass_count=$(( pass_count + 1 ))
-        else
-            log "FAIL" "${func_name} does not contain the correct status output"
-            fail_count=$(( fail_count + 1 ))
-        fi
+            # Check if the monitoring functions output contains correct status
+            check_count=$(( check_count + 1 ))
 
-        # Check if the results of monitoring function contain "Threshold"
-        check_count=$(( check_count + 1 ))
+            if [[ "$skip_check" == "TRUE" ]]; then
+                log "SKIP" "Status Output Test skipped due to previously listed FAILURE"
+                skip_count=$(( skip_count + 1 ))
+            elif [[ "$test_value" == OK* || "$test_value" == ALERT* ]]; then
+                log "PASS" "${func_name} output contains correct status (OK or ALERT)"
+                pass_count=$(( pass_count + 1 ))
+            else
+                log "FAIL" "${func_name} does not contain the correct status output"
+                fail_count=$(( fail_count + 1 ))
+            fi
 
-        if [[ "$skip_check" == "TRUE" ]]; then
-            log "SKIP" "Threshold Check Test skipped due to previously listed FAILURE"
-            skip_count=$(( skip_count + 1 ))
-        elif [[ "$func_value" == *threshold*  ]]; then
-            log "PASS" "${func_name} output contains threshold"
-            pass_count=$(( pass_count + 1 ))
-        else
-            log "FAIL" "${func_name} does not contain threshold"
-            fail_count=$((fail_count + 1 ))
-        fi
+            # Check if the results of monitoring function contain "Threshold"
+            check_count=$(( check_count + 1 ))
 
-
+            if [[ "$skip_check" == "TRUE" ]]; then
+                log "SKIP" "Threshold Check Test skipped due to previously listed FAILURE"
+                skip_count=$(( skip_count + 1 ))
+            elif [[ "$test_value" == *threshold*  ]]; then
+                log "PASS" "${func_name} output contains threshold"
+                pass_count=$(( pass_count + 1 ))
+            else
+                log "FAIL" "${func_name} does not contain threshold"
+                fail_count=$((fail_count + 1 ))
+            fi
+        done <<< "$func_value"
     done
 
 cat << EOF
@@ -148,7 +149,7 @@ EOF
     # Check if CPU_TEST output contains "CPU Usage"
     check_count=$(( check_count + 1 ))
 
-    if [[ $skip_check == "TRUE" ]]; then
+    if [[ "$skip_check" == "TRUE" ]]; then
         log "SKIP" "Check skipped due to the empty value of CPU_TEST"
         skip_count=$(( skip_count + 1 ))
     elif [[ "$CPU_TEST" =~ "CPU Usage: "[0-9]+ ]]; then
@@ -162,7 +163,7 @@ EOF
     # Check if CPU_TEST output contains "%" sign
     check_count=$(( check_count + 1 ))
 
-    if [[ $skip_check == "TRUE" ]]; then
+    if [[ "$skip_check" == "TRUE" ]]; then
         log "SKIP" "Check skipped due to the empty value of CPU_TEST"
         skip_count=$(( skip_count + 1 ))
     elif [[ $CPU_TEST == *%* ]]; then
@@ -172,6 +173,29 @@ EOF
         log "FAIL" "CPU_TEST does not contain '%' sign"
         fail_count=$(( fail_count + 1))
     fi
+
+    # Force threshold to 0 to verify ALERT triggers correctly regardless of actual CPU usage
+    local original_threshold="$CPU_THRESHOLD"
+    CPU_THRESHOLD=0
+    local override_value
+    override_value=$(check_cpu)
+
+    # Check if the status is correctly set to "ALERT" when function runs with threshold at 0
+    check_count=$(( check_count + 1 ))
+
+    if [[ "$skip_check" == "TRUE" ]]; then
+        log "SKIP" "Check skipped due to the empty value of CPU_TEST"
+        skip_count=$(( skip_count + 1 ))
+    elif [[ "$override_value" == *ALERT* ]]; then
+        log "PASS" "Threshold override test passed. Alert displayed when set to 0."
+        pass_count=$(( pass_count + 1 ))
+    else
+        log "FAIL" "Threshold override test failed, due to unexpected return value"
+        fail_count=$(( fail_count + 1 ))
+    fi
+
+    # Restore before next test runs
+    CPU_THRESHOLD="$original_threshold"
 
     cat << EOF
 =====================================================================================================
@@ -183,52 +207,63 @@ EOF
 
 disk_output_test() {
 
-    local skip_check=""
-
     cat << EOF
 =====================================================================================================
 Running DISK specific output test
 =====================================================================================================
 EOF
 
-    # Check if DISK_TEST returned an empty value
-    if [[ -z "$DISK_TEST" ]]; then
+     # Check if DISK_TEST returned an empty value. If so don't run any tests
+     if [[ -z "$DISK_TEST" ]]; then
         log "ERROR" "DISK_TEST returned empty"
-        skip_check="TRUE"
         error_count=$(( error_count + 1 ))
+    else
+        while IFS= read -r disk_line; do
+
+            # Check if DISK_TEST output contains Disk name with correct formatting
+            check_count=$(( check_count + 1 ))
+
+            if [[ "$disk_line" =~ "Disk "\[.+\] ]]; then
+                log "PASS" "DISK_TEST contains the correct 'Disk [name]:' formatting"
+                pass_count=$(( pass_count + 1 ))
+            else
+                log "FAIL" "DISK_TEST does not contain correct 'Disk [name]:' formatting"
+                fail_count=$(( fail_count + 1 ))
+            fi
+
+            # Check if DISK_TEST contains "%" sign
+            check_count=$(( check_count + 1 ))
+
+            if [[ "$disk_line" == *%* ]]; then
+                log "PASS" "DISK_TEST contains '%' sign"
+                pass_count=$(( pass_count + 1 ))
+            else
+                log "FAIL" "DISK_TEST does not contain '%' sign"
+                fail_count=$(( fail_count + 1 ))
+            fi
+
+            # Force threshold to 0 to verify ALERT triggers correctly regardless of actual CPU usage
+            local original_threshold="$DISK_THRESHOLD"
+            DISK_THRESHOLD=0
+            local override_value
+            override_value=$(check_disk)
+
+            # Check if the status is correctly set to "ALERT" when function runs with threshold at 0
+            check_count=$(( check_count + 1 ))
+
+            if [[ "$override_value" == *ALERT* ]]; then
+                log "PASS" "Threshold override test passed. Alert displayed when set to 0."
+                pass_count=$(( pass_count + 1 ))
+            else
+                log "FAIL" "Threshold override test failed, due to unexpected return value"
+                fail_count=$(( fail_count + 1 ))
+            fi
+
+            # Restore before next test runs
+            DISK_THRESHOLD="$original_threshold"
+
+        done <<< "$DISK_TEST"
     fi
-
-    # Run while loop on the results of DISK_TEST (per line sourced by here-string)
-    while IFS= read -r disk_line; do
-
-        # Check if DISK_TEST output contains Disk name with correct formatting
-        check_count=$(( check_count + 1 ))
-
-        if [[ "$skip_check" == "TRUE" ]]; then
-            log "SKIP" "Contains 'Disk [name]:' test skipped due to previously listed error"
-            skip_count=$(( skip_count + 1 ))
-        elif [[ "$disk_line" =~ "Disk "\[.+\] ]]; then
-            log "PASS" "DISK_TEST contains the correct 'Disk [name]:' formatting"
-            pass_count=$(( pass_count + 1 ))
-        else
-            log "FAIL" "DISK_TEST does not contain correct 'Disk [name]:' formatting"
-            fail_count=$(( fail_count + 1 ))
-        fi
-
-        # Check if DISK_TEST contains "%" sign
-        check_count=$(( check_count + 1 ))
-
-        if [[ "$skip_check" == "TRUE" ]]; then
-            log "SKIP" "Contains '%' test skipped due to previously listed error"
-            skip_count=$(( skip_count + 1 ))
-        elif [[ "$disk_line" == *%* ]]; then
-            log "PASS" "DISK_TEST contains '%' sign"
-            pass_count=$(( pass_count + 1 ))
-        else
-            log "FAIL" "DISK_TEST does not contain '%' sign"
-            fail_count=$(( fail_count + 1 ))
-        fi
-    done <<< "$DISK_TEST"
 
     cat << EOF
 =====================================================================================================
@@ -285,7 +320,7 @@ EOF
     # Check if MEMORY_TEST contains size denominator "MB"
     check_count=$(( check_count + 1 ))
 
-    if [[ $skip_check == "TRUE" ]]; then
+    if [[ "$skip_check" == "TRUE" ]]; then
         log "SKIP" "Contains 'MB' test skipped due to previously listed error"
         skip_count=$(( skip_count + 1 ))
     elif [[ "$MEMORY_TEST" == *MB* ]]; then
@@ -295,6 +330,29 @@ EOF
         log "FAIL" "MEMORY_TEST output does not contain correct size denominator 'MB'"
         fail_count=$(( fail_count + 1 ))
     fi
+
+    # Force threshold to 0 to verify ALERT triggers correctly regardless of actual CPU usage
+    local original_threshold="$MEMORY_THRESHOLD"
+    MEMORY_THRESHOLD=0
+    local override_value
+    override_value=$(check_memory)
+
+    # Check if the status is correctly set to "ALERT" when function runs with threshold at 0
+    check_count=$(( check_count + 1 ))
+
+    if [[ "$skip_check" == "TRUE" ]]; then
+        log "SKIP" "Check skipped due to the empty value of MEMORY_TEST"
+        skip_count=$(( skip_count + 1 ))
+    elif [[ "$override_value" == *ALERT* ]]; then
+        log "PASS" "Threshold override test passed. Alert displayed when set to 0."
+        pass_count=$(( pass_count + 1 ))
+    else
+        log "FAIL" "Threshold override test failed, due to unexpected return value"
+        fail_count=$(( fail_count + 1 ))
+    fi
+
+    # Restore before next test runs
+    MEMORY_THRESHOLD="$original_threshold"
 
     cat << EOF
 =====================================================================================================
@@ -324,7 +382,7 @@ EOF
     # Check if PROCESSES_TEST contains "Running Processes" phrase
     check_count=$(( check_count + 1 ))
 
-    if [[ $skip_check == "TRUE" ]]; then
+    if [[ "$skip_check" == "TRUE" ]]; then
         log "SKIP" "Contains 'Running Processes' test skipped due to previously listed error"
         skip_count=$(( skip_count + 1 ))
     elif [[ "$PROCESSES_TEST" == *"Running Processes"* ]]; then
@@ -338,17 +396,39 @@ EOF
     # Check that PROCESSES_TEST does not contain "%" sign
     check_count=$(( check_count + 1 ))
 
-    if [[ $skip_check == "TRUE" ]]; then
-        log "SKIP" "Does not containg '%' test skipped due to previously listed error"
+    if [[ "$skip_check" == "TRUE" ]]; then
+        log "SKIP" "Does not containing '%' test skipped due to previously listed error"
         skip_count=$(( skip_count + 1 ))
     elif ! [[ "$PROCESSES_TEST" == *%* ]]; then
-        log "PASS" "PROCESSES_TEST output does not contains '%' sign"
+        log "PASS" "PROCESSES_TEST output does not contain '%' sign"
         pass_count=$(( pass_count + 1 ))
     else
         log "FAIL" "PROCESSES_TEST output contains '%' sign"
         fail_count=$(( fail_count + 1 ))
     fi
 
+    # Force threshold to 0 to verify ALERT triggers correctly regardless of actual CPU usage
+    local original_threshold="$PROCESS_THRESHOLD"
+    PROCESS_THRESHOLD=0
+    local override_value
+    override_value=$(check_processes)
+
+    # Check if the status is correctly set to "ALERT" when function runs with threshold at 0
+    check_count=$(( check_count + 1 ))
+
+    if [[ "$skip_check" == "TRUE" ]]; then
+        log "SKIP" "Check skipped due to the empty value of PROCESSES_TEST"
+        skip_count=$(( skip_count + 1 ))
+    elif [[ "$override_value" == *ALERT* ]]; then
+        log "PASS" "Threshold override test passed. Alert displayed when set to 0."
+        pass_count=$(( pass_count + 1 ))
+    else
+        log "FAIL" "Threshold override test failed, due to unexpected return value"
+        fail_count=$(( fail_count + 1 ))
+    fi
+
+    # Restore before next test runs
+    PROCESS_THRESHOLD="$original_threshold"
 
     cat << EOF
 =====================================================================================================
@@ -377,7 +457,7 @@ EOF
 
     #Validating the results
     if ! [[ "$fail_count" -gt 0 || "$error_count" -gt 0 ]]; then
-        log "INFO" "All test runs have completed succesfully"
+        log "INFO" "All test runs have completed successfully"
     else
         log "WARN" "Tests failed: $fail_count, tests skipped $skip_count, tests with errors $error_count"
         exit 1
